@@ -2,6 +2,7 @@ import { Link, Route, Routes } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { AccountsPage } from "./Accounts";
 import { ConnectorPage } from "./Connector";
+import { DashboardPage } from "./Dashboard";
 
 export function AppShell() {
   const { user, logout } = useAuth();
@@ -35,11 +36,7 @@ export function AppShell() {
           </div>
         </header>
         <Routes>
-          <Route index element={
-            <p className="muted">
-              Dashboard hadir di Phase 6. Mulai dari <Link to="/app/accounts">Akun</Link>.
-            </p>
-          } />
+          <Route index element={<DashboardPage />} />
           <Route path="accounts" element={<AccountsPage />} />
           <Route path="connector" element={<ConnectorPage />} />
         </Routes>

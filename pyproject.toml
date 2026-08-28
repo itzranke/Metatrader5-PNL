@@ -1,6 +1,6 @@
 [tool.pytest.ini_options]
 pythonpath = ["."]
-testpaths = ["apps/api/tests"]
+testpaths = ["apps/api/tests", "packages/analytics/tests", "apps/connector/tests"]
 
 [tool.ruff]
 line-length = 100
