@@ -14,3 +14,10 @@ build/
 .DS_Store
 *.log
 coverage/
+
+# artefak lokal connector
+connector.json
+outbox.jsonl
+mt5_password.txt
+.test.db
+.alembic-test.db

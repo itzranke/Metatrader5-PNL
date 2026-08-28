@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
 
 from apps.api.app.middleware import RequestLoggingMiddleware, SecurityHeadersMiddleware
-from apps.api.app.routers import accounts, auth, health
+from apps.api.app.routers import accounts, auth, connector, health
 from packages.config import get_settings
 from packages.db import SessionLocal, engine
 from packages.db.models import Broker
@@ -46,6 +46,7 @@ def create_app() -> FastAPI:
     app.include_router(health.router, prefix=settings.api_prefix)
     app.include_router(auth.router, prefix=settings.api_prefix)
     app.include_router(accounts.router, prefix=settings.api_prefix)
+    app.include_router(connector.router, prefix=settings.api_prefix)
     return app
 
 

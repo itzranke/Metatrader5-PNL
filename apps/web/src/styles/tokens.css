@@ -107,3 +107,6 @@ body {
 .account-grid { display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-top: var(--sp-3); }
 .row.spread { justify-content: space-between; align-items: center; }
 .empty { min-height: 140px; justify-content: center; display: flex; flex-direction: column; gap: var(--sp-2); }
+.pairing-box { margin-top: var(--sp-4); padding: var(--sp-4); border: 1px dashed var(--color-border); border-radius: var(--radius-lg); text-align: center; }
+.pairing-code { font-size: 2.4rem; font-weight: 700; letter-spacing: 0.35em; color: var(--color-primary); margin-bottom: var(--sp-2); }
+.steps { padding-left: var(--sp-5); display: flex; flex-direction: column; gap: var(--sp-2); }

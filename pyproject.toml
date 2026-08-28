@@ -13,4 +13,4 @@ ignore = ["E501"]
 
 [tool.ruff.lint.flake8-bugbear]
 # Pola standar FastAPI: Depends() di default argumen
-extend-immutable-callables = ["fastapi.Depends"]
+extend-immutable-calls = ["fastapi.Depends"]

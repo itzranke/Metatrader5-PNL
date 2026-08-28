@@ -14,7 +14,7 @@ prop firm & backtest.
 | 0–1 Foundation (repo, config, DB, healthz, web skeleton) | ✅ selesai |
 | 2 Authentication (register/verify/login/refresh/logout/forgot/reset, session mgmt, rate limit, halaman auth web) | ✅ selesai |
 | 3 Database & Accounts (CRUD akun, quota 2/user, demo generator 60–90 hari <5 dtk, preset HF, halaman Akun web) | ✅ selesai |
-| 4 MT5 Connector | ⏳ berikutnya |
+| 4 MT5 Connector (pairing code 8 digit TTL 5 mnt, device auth Argon2+anti-replay, sync batch 500 idempoten, outbox offline, heartbeat) | ✅ selesai |
 | 5–16 | lihat BLUEPRINT §34 |
 
 ## Struktur

@@ -5,7 +5,7 @@
 - PATCH /accounts/:id · DELETE /accounts/:id (soft delete, tenant-scoped)
 - GET /meta/broker-presets — preset "Isi Akun Demo HF Markets"
 """
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
@@ -132,7 +132,7 @@ def delete_account(
     acc = db.get(TradingAccount, account_id)
     if acc is None or acc.user_id != user.id or acc.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Akun tidak ditemukan")
-    acc.deleted_at = datetime.now(timezone.utc)
+    acc.deleted_at = datetime.now(UTC)
     if acc.connection is not None:
         db.delete(acc.connection)  # putuskan koneksi
     db.commit()

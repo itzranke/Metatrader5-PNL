@@ -1,6 +1,7 @@
 import { Link, Route, Routes } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { AccountsPage } from "./Accounts";
+import { ConnectorPage } from "./Connector";
 
 export function AppShell() {
   const { user, logout } = useAuth();
@@ -12,6 +13,7 @@ export function AppShell() {
         <nav>
           <Link to="/app">Dashboard</Link>
           <Link to="/app/accounts">Akun</Link>
+          <Link to="/app/connector">Connector</Link>
           <span className="nav-placeholder">Trading · Jurnal · Analitik (fase berikutnya)</span>
         </nav>
       </aside>
@@ -39,6 +41,7 @@ export function AppShell() {
             </p>
           } />
           <Route path="accounts" element={<AccountsPage />} />
+          <Route path="connector" element={<ConnectorPage />} />
         </Routes>
       </section>
     </div>

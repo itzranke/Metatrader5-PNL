@@ -182,7 +182,7 @@ class ConnectorDevice(TimestampMixin, Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     device_name: Mapped[str] = mapped_column(String(100), default="", nullable=False)
     device_key_hash: Mapped[str] = mapped_column(String(255), nullable=False)  # argon2 hash
-    client_id: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    client_id: Mapped[str | None] = mapped_column(String(64), unique=True)
     pairing_code_hash: Mapped[str | None] = mapped_column(String(255))
     pairing_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

@@ -9,7 +9,7 @@ Menghasilkan akun + 60–90 hari trading realistis:
 Semua data random dengan seed per akun → deterministik, <5 detik.
 """
 import random
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
@@ -53,7 +53,7 @@ NOTES_ID = [
 ]
 TAG_NAMES = ["breakout", "retest", "news", "plan", "harian"]
 
-_TZ = timezone.utc
+_TZ = UTC
 
 
 def _symbol_pool(rng: random.Random) -> str:
@@ -117,7 +117,7 @@ def generate_demo_account(db: Session, user_id: int, name: str = "Data Contoh") 
     trades_flat: list[Trade] = []
     journal_candidates: list[tuple[Trade, str]] = []
 
-    for day, count in zip(trading_days, day_counts):
+    for day, count in zip(trading_days, day_counts, strict=False):
         day_trades: list[Trade] = []
         for _ in range(count):
             symbol = _symbol_pool(rng)
