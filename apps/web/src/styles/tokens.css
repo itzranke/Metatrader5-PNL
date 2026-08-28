@@ -1,0 +1,71 @@
+/* Design tokens — dari ui-foundation (workspace induk) + Tailwind v4.
+   Aturan: WCAG 2.2 AA, no-emoji icons, loading ≠ disabled. */
+@import "tailwindcss";
+
+:root {
+  --color-bg: #0d1015;
+  --color-surface: #14181f;
+  --color-surface-2: #1a212c;
+  --color-border: #232b38;
+  --color-text: #e8eef6;
+  --color-text-muted: #9aa7b8;
+  --color-text-dim: #6b7889;
+  --color-primary: #2dd4a7;
+  --color-primary-soft: rgba(45, 212, 167, 0.12);
+  --color-up: #2dd4a7;
+  --color-down: #f25f5c;
+  --color-warn: #f5b544;
+  --color-info: #4c9aff;
+  --font-family: "Inter", "Roboto", -apple-system, "Segoe UI", sans-serif;
+  --font-body: 14px;
+  --font-caption: 12px;
+  --font-title: 16px;
+  --font-headline: 20px;
+  --font-display: 34px;
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px;
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-full: 999px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font-family);
+  font-size: var(--font-body);
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.page { max-width: 720px; margin: 0 auto; padding: var(--sp-6) var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-3); }
+.display { font-size: var(--font-display); font-weight: 800; }
+.title { font-size: var(--font-title); font-weight: 700; }
+.muted { color: var(--color-text-muted); }
+.row { display: flex; gap: var(--sp-3); flex-wrap: wrap; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
+  min-height: 44px; padding: 0 var(--sp-4);
+  border: 0; border-radius: var(--radius-full);
+  font-family: inherit; font-size: var(--font-body); font-weight: 600;
+  cursor: pointer; text-decoration: none;
+}
+.btn-primary { background: var(--color-primary); color: #03241a; }
+.btn-secondary { background: var(--color-primary-soft); color: var(--color-primary); }
+
+.shell { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 240px; padding: var(--sp-4);
+  background: var(--color-surface); border-right: 1px solid var(--color-border);
+  display: flex; flex-direction: column; gap: var(--sp-4);
+}
+.brand { font-weight: 800; }
+.sidebar nav { display: flex; flex-direction: column; gap: var(--sp-2); }
+.sidebar a { color: var(--color-text); text-decoration: none; padding: var(--sp-2); border-radius: var(--radius-sm); }
+.sidebar a:hover { background: var(--color-primary-soft); }
+.nav-placeholder { color: var(--color-text-dim); font-size: var(--font-caption); padding: var(--sp-2); }
+.content { flex: 1; padding: var(--sp-5); }
