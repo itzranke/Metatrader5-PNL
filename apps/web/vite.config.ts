@@ -11,6 +11,7 @@ export default defineConfig({
     proxy: {
       // Dev: frontend tidak pernah panggil localhost backend langsung
       "/api": "http://localhost:8000",
+      "/uploads": "http://localhost:8000",
     },
   },
   test: {

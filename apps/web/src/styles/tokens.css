@@ -132,3 +132,9 @@ body {
 .chip-win { color: var(--color-success); border-color: var(--color-success); }
 .chip-loss { color: var(--color-danger); border-color: var(--color-danger); }
 select { background: var(--color-bg); color: var(--color-text); border: 1px solid var(--color-border); border-radius: var(--radius); padding: var(--sp-2) var(--sp-3); font: inherit; }
+textarea { background: var(--color-bg); color: var(--color-text); border: 1px solid var(--color-border); border-radius: var(--radius); padding: var(--sp-2) var(--sp-3); font: inherit; width: 100%; resize: vertical; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--sp-3); }
+.check { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--font-body); }
+.journal-list { display: flex; flex-direction: column; gap: var(--sp-3); }
+.journal-list .row { flex-wrap: wrap; gap: var(--sp-2); }
+.journal-shot { max-width: 100%; max-height: 260px; border-radius: var(--radius); margin-top: var(--sp-2); border: 1px solid var(--color-border); }

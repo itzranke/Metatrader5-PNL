@@ -417,6 +417,7 @@ class JournalEntry(TimestampMixin, Base):
     notes: Mapped[str] = mapped_column(String(2000), default="", nullable=False)
     lesson: Mapped[str] = mapped_column(String(1000), default="", nullable=False)
     plan_match: Mapped[bool | None]
+    screenshot_path: Mapped[str | None] = mapped_column(String(500))  # MVP: file lokal; R2 menyusul (§21)
 
     tags_m2m: Mapped[list[Tag]] = relationship(
         secondary="trade_tags", back_populates="journal_m2m"

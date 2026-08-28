@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     telegram_bot_token: str = ""
     sentry_dsn: str = ""
 
+    # Upload (screenshot jurnal) — MVP: filesystem lokal; R2 menyusul (§21)
+    upload_dir: str = "uploads"
+
     @property
     def origins_list(self) -> list[str]:
         return [o.strip() for o in self.allowed_origins.split(",") if o.strip()]
