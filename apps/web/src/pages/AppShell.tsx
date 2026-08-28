@@ -4,6 +4,7 @@ import { AccountsPage } from "./Accounts";
 import { ConnectorPage } from "./Connector";
 import { DashboardPage } from "./Dashboard";
 import { JournalPage } from "./Journal";
+import { SettingsPage } from "./Settings";
 
 export function AppShell() {
   const { user, logout } = useAuth();
@@ -17,6 +18,7 @@ export function AppShell() {
           <Link to="/app/accounts">Akun</Link>
           <Link to="/app/connector">Connector</Link>
           <Link to="/app/journal">Jurnal</Link>
+          <Link to="/app/settings">Pengaturan</Link>
           <span className="nav-placeholder">Trading · Jurnal · Analitik (fase berikutnya)</span>
         </nav>
       </aside>
@@ -42,6 +44,7 @@ export function AppShell() {
           <Route path="accounts" element={<AccountsPage />} />
           <Route path="connector" element={<ConnectorPage />} />
           <Route path="journal" element={<JournalPage />} />
+          <Route path="settings" element={<SettingsPage />} />
         </Routes>
       </section>
     </div>

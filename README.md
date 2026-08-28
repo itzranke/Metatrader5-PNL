@@ -17,7 +17,8 @@ prop firm & backtest.
 | 4 MT5 Connector (pairing code 8 digit TTL 5 mnt, device auth Argon2+anti-replay, sync batch 500 idempoten, outbox offline, heartbeat) | ✅ selesai |
 | 5 PnL Dashboard & Analytics (KPI cards, equity curve recharts, kalender P&L heatmap, posisi terbuka, trade terbaru + filter, agregasi multi-akun, packages/analytics murni) | ✅ selesai |
 | 6 Jurnal Trading (CRUD jurnal per trade/manual, emosi 3 fase, confidence/discipline, 5 flag psikologi, tag many-to-many, screenshot upload 5 MB, filter tag/setup/bulan) | ✅ selesai |
-| 7–16 | lihat BLUEPRINT §34 |
+| 7 Export CSV + Settings (trades.csv/journal.csv BOM UTF-8, profil, ganti password, sesi aktif + cabut) — **MVP 9 fitur LENGKAP** | ✅ selesai |
+| 8–16 | lihat BLUEPRINT §34 |
 
 ## Struktur
 

@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 
 from apps.api.app.middleware import RequestLoggingMiddleware, SecurityHeadersMiddleware
-from apps.api.app.routers import accounts, auth, connector, dashboard, health, journal
+from apps.api.app.routers import accounts, auth, connector, dashboard, export, health, journal
 from packages.config import get_settings
 from packages.db import SessionLocal, engine
 from packages.db.models import Broker
@@ -51,6 +51,7 @@ def create_app() -> FastAPI:
     app.include_router(connector.router, prefix=settings.api_prefix)
     app.include_router(dashboard.router, prefix=settings.api_prefix)
     app.include_router(journal.router, prefix=settings.api_prefix)
+    app.include_router(export.router, prefix=settings.api_prefix)
     # screenshot jurnal (nama file uuid acak; akses via path yang tidak bisa ditebak)
     upload_dir = Path(settings.upload_dir)
     upload_dir.mkdir(parents=True, exist_ok=True)
