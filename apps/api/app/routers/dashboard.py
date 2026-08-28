@@ -162,7 +162,7 @@ def account_equity(
     db: Session = Depends(get_session),
 ):
     """Equity curve: snapshot bila ada; fallback P&L kumulatif dari trades."""
-    acc = _account_or_404(db, account_id, user)
+    _account_or_404(db, account_id, user)
     snapshots = db.scalars(
         select(EquitySnapshot)
         .where(EquitySnapshot.trading_account_id == account_id)

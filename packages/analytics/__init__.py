@@ -5,8 +5,7 @@ Metrik mengikuti BLUEPRINT §12 (21 metrik; subset inti di sini).
 """
 from __future__ import annotations
 
-import math
-from datetime import UTC, date, datetime, time, timezone
+from datetime import UTC, datetime
 from statistics import mean
 
 # ---------------------------------------------------------------- ringkas
@@ -90,7 +89,7 @@ def summarize(trades: list[dict]) -> dict:
 def _dt(v) -> datetime:
     if isinstance(v, datetime):
         return v
-    if isinstance(v, (int, float)):
+    if isinstance(v, int | float):
         return datetime.fromtimestamp(v, tz=UTC)
     return datetime.fromisoformat(str(v))
 
