@@ -12,8 +12,9 @@ prop firm & backtest.
 | Fase | Status |
 |---|---|
 | 0–1 Foundation (repo, config, DB, healthz, web skeleton) | ✅ selesai |
-| 2 Authentication | ⏳ berikutnya |
-| 3–16 | lihat BLUEPRINT §34 |
+| 2 Authentication (register/verify/login/refresh/logout/forgot/reset, session mgmt, rate limit, halaman auth web) | ✅ selesai |
+| 3 Database & Accounts | ⏳ berikutnya |
+| 4–16 | lihat BLUEPRINT §34 |
 
 ## Struktur
 

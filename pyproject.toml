@@ -10,3 +10,7 @@ extend-exclude = ["packages/db/alembic/versions"]
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B"]
 ignore = ["E501"]
+
+[tool.ruff.lint.flake8-bugbear]
+# Pola standar FastAPI: Depends() di default argumen
+extend-immutable-callables = ["fastapi.Depends"]

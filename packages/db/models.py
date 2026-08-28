@@ -84,7 +84,14 @@ class User(TimestampMixin, SoftDeleteMixin, Base):
     locale: Mapped[str] = mapped_column(String(10), default="id", nullable=False)
     base_currency: Mapped[str] = mapped_column(String(10), default="USD", nullable=False)
 
+    @property
+    def email_verified(self) -> bool:
+        return self.email_verified_at is not None
+
     sessions: Mapped[list[Session]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    auth_tokens: Mapped[list[AuthToken]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
     accounts: Mapped[list[TradingAccount]] = relationship(
@@ -147,6 +154,20 @@ class TradingAccount(TimestampMixin, SoftDeleteMixin, Base):
     connection: Mapped[MT5Connection | None] = relationship(
         back_populates="account", uselist=False, cascade="all, delete-orphan"
     )
+
+
+class AuthToken(TimestampMixin, Base):
+    """Token sekali pakai: verifikasi email & reset password (hash, TTL)."""
+    __tablename__ = "auth_tokens"
+    __table_args__ = (Index("ix_auth_tokens_user_kind", "user_id", "kind"),)
+    id: Mapped[int] = mapped_column(BIGINT, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    kind: Mapped[str] = mapped_column(String(20), nullable=False)  # verify_email | reset_password
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    user: Mapped[User] = relationship(back_populates="auth_tokens")
 
 
 # ---------------------------------------------------------------- connector

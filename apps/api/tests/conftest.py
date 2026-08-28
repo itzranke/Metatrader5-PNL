@@ -13,6 +13,7 @@ os.environ.setdefault("ENVIRONMENT", "test")
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
+from apps.api.app.core.ratelimit import get_limiter  # noqa: E402
 from apps.api.app.main import app  # noqa: E402
 from packages.db import Base, engine  # noqa: E402
 
@@ -23,6 +24,18 @@ def _db():
     Base.metadata.create_all(engine)
     yield
     engine.dispose()
+
+
+@pytest.fixture(autouse=True)
+def _clean_tables():
+    """Bersihkan semua baris + state rate limiter setelah tiap test."""
+    yield
+    with engine.begin() as conn:
+        for table in reversed(Base.metadata.sorted_tables):
+            conn.execute(table.delete())
+    limiter = get_limiter()
+    if hasattr(limiter, "reset"):
+        limiter.reset()
 
 
 @pytest.fixture()

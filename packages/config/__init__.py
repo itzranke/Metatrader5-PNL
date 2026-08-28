@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     app_name: str = "MT5 Journal API"
     environment: str = "development"  # development | staging | production
     api_prefix: str = "/api/v1"
+    frontend_url: str = "http://localhost:5173"
 
     database_url: str = "postgresql+psycopg://mt5:mt5@localhost:5432/mt5journal"
     redis_url: str = "redis://localhost:6379/0"
