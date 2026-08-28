@@ -100,4 +100,10 @@ body {
   font-size: var(--font-caption); font-weight: 600; color: var(--color-text-muted);
 }
 .chip-warn { color: var(--color-warn); border-color: var(--color-warn); }
+.chip-demo { color: var(--color-info); border-color: var(--color-info); }
 .btn-ghost { background: transparent; color: var(--color-text); border: 1px solid var(--color-border); }
+.note { font-size: var(--font-caption); }
+.account-actions { display: grid; gap: var(--sp-4); grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin: var(--sp-4) 0; }
+.account-grid { display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-top: var(--sp-3); }
+.row.spread { justify-content: space-between; align-items: center; }
+.empty { min-height: 140px; justify-content: center; display: flex; flex-direction: column; gap: var(--sp-2); }

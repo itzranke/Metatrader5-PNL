@@ -1,5 +1,6 @@
-import { Link } from "react-router-dom";
+import { Link, Route, Routes } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { AccountsPage } from "./Accounts";
 
 export function AppShell() {
   const { user, logout } = useAuth();
@@ -10,12 +11,13 @@ export function AppShell() {
         <div className="brand">MT5 Journal</div>
         <nav>
           <Link to="/app">Dashboard</Link>
+          <Link to="/app/accounts">Akun</Link>
           <span className="nav-placeholder">Trading · Jurnal · Analitik (fase berikutnya)</span>
         </nav>
       </aside>
       <section className="content">
         <header className="topbar">
-          <h1 className="title">Dashboard</h1>
+          <h1 className="title">MT5 Journal</h1>
           <div className="row">
             {user && (
               <>
@@ -30,9 +32,14 @@ export function AppShell() {
             )}
           </div>
         </header>
-        <p className="muted">
-          Konten dashboard hadir di Phase 6. API: {import.meta.env.VITE_API_BASE ?? "/api/v1"}
-        </p>
+        <Routes>
+          <Route index element={
+            <p className="muted">
+              Dashboard hadir di Phase 6. Mulai dari <Link to="/app/accounts">Akun</Link>.
+            </p>
+          } />
+          <Route path="accounts" element={<AccountsPage />} />
+        </Routes>
       </section>
     </div>
   );
