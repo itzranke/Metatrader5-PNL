@@ -138,3 +138,7 @@ textarea { background: var(--color-bg); color: var(--color-text); border: 1px so
 .journal-list { display: flex; flex-direction: column; gap: var(--sp-3); }
 .journal-list .row { flex-wrap: wrap; gap: var(--sp-2); }
 .journal-shot { max-width: 100%; max-height: 260px; border-radius: var(--radius); margin-top: var(--sp-2); border: 1px solid var(--color-border); }
+.score-bars { display: flex; flex-direction: column; gap: var(--sp-2); }
+.score-row { display: grid; grid-template-columns: 140px 1fr 36px; align-items: center; gap: var(--sp-3); }
+.score-track { background: var(--color-border); border-radius: 999px; height: 8px; overflow: hidden; }
+.score-fill { background: var(--color-primary); height: 100%; border-radius: 999px; }

@@ -9,10 +9,12 @@ import csv
 import io
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
+from openpyxl import Workbook
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from apps.api.app.core.deps import get_current_user
+from packages.analytics import monthly_summary, summarize
 from packages.db import get_session
 from packages.db.models import JournalEntry, Trade, TradingAccount, User
 
@@ -117,3 +119,82 @@ def export_journal(
             }
         )
     return _csv_response(data, f"journal-{account_id}.csv")
+
+
+@router.get("/accounts/{account_id}/export/excel.xlsx")
+def export_excel(
+    account_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_session),
+):
+    """Excel multi-sheet [Trades, Journal, Metrik] (BLUEPRINT §27 Phase 2)."""
+    _account_or_404(db, account_id, user)
+    wb = Workbook()
+
+    # --- Sheet 1: Trades
+    trades = db.scalars(
+        select(Trade).where(Trade.trading_account_id == account_id, Trade.deleted_at.is_(None))
+    ).all()
+    ws = wb.active
+    ws.title = "Trades"
+    ws.append(["ticket", "symbol", "side", "volume", "open_price", "close_price",
+               "open_time", "close_time", "net_profit", "gross_profit", "swap",
+               "commission", "r_multiple", "source"])
+    for t in trades[:MAX_ROWS]:
+        ws.append([
+            t.ticket, t.symbol, t.side, float(t.volume), float(t.open_price),
+            float(t.close_price), t.open_time.isoformat(), t.close_time.isoformat(),
+            float(t.net_profit or 0), float(t.gross_profit or 0), float(t.swap or 0),
+            float(t.commission or 0),
+            float(t.r_multiple) if t.r_multiple is not None else "",
+            t.source,
+        ])
+
+    # --- Sheet 2: Journal
+    entries = db.scalars(
+        select(JournalEntry)
+        .where(JournalEntry.trading_account_id == account_id)
+        .order_by(JournalEntry.entry_date.asc())
+    ).all()
+    ws2 = wb.create_sheet("Journal")
+    ws2.append(["entry_date", "setup", "emotion_before", "emotion_during", "emotion_after",
+                "confidence", "discipline", "fear", "greed", "revenge", "fomo", "boredom",
+                "rule_adherence", "reason_entry", "reason_exit", "notes", "lesson",
+                "plan_match", "tags"])
+    for e in entries[:MAX_ROWS]:
+        ws2.append([
+            e.entry_date.isoformat(), e.setup, e.emotion_before, e.emotion_during,
+            e.emotion_after, e.confidence, e.discipline, e.fear, e.greed, e.revenge,
+            e.fomo, e.boredom, e.rule_adherence, e.reason_entry, e.reason_exit,
+            e.notes, e.lesson,
+            e.plan_match if e.plan_match is not None else "",
+            "|".join(t.name for t in e.tags_m2m),
+        ])
+
+    # --- Sheet 3: Metrik (ringkasan + per bulan)
+    trade_dicts = [
+        {
+            "net_profit": float(t.net_profit or 0),
+            "gross_profit": float(t.gross_profit or 0),
+            "open_time": t.open_time,
+            "close_time": t.close_time,
+            "r_multiple": float(t.r_multiple) if t.r_multiple is not None else None,
+        }
+        for t in trades
+    ]
+    ws3 = wb.create_sheet("Metrik")
+    ws3.append(["metrik", "nilai"])
+    for k, v in summarize(trade_dicts).items():
+        ws3.append([k, v])
+    ws3.append([])
+    ws3.append(["month", "total_trades", "win_rate", "net_profit", "profit_factor"])
+    for m in monthly_summary(trade_dicts):
+        ws3.append([m["month"], m["total_trades"], m["win_rate"], m["net_profit"], m["profit_factor"]])
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    return Response(
+        content=buf.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="mt5-journal-{account_id}.xlsx"'},
+    )

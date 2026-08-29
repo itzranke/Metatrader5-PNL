@@ -26,6 +26,11 @@ interface EquityPoint { ts: string; equity: number; }
 interface CalendarDay { day: string; net_profit: number; trades: number; wins: number; }
 interface Position { ticket: string; symbol: string; side: string; volume: number; open_time: string; floating_pnl: number | null; }
 interface TradeRow { id: number; symbol: string; side: string; volume: number; net_profit: number; close_time: string; }
+interface Score {
+  score: number | null; progress: number; need: number; label: string | null;
+  data_complete: boolean;
+  components: Record<string, { weight: number; sub: number }> | null;
+}
 
 const fmt = (v: number | null | undefined, digits = 2) =>
   v === null || v === undefined ? "—" : v.toLocaleString("id-ID", { minimumFractionDigits: digits, maximumFractionDigits: digits });
@@ -43,6 +48,7 @@ export function DashboardPage() {
   const [calendar, setCalendar] = useState<CalendarDay[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [trades, setTrades] = useState<TradeRow[]>([]);
+  const [score, setScore] = useState<Score | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -61,14 +67,15 @@ export function DashboardPage() {
     setError(null);
     const q = days ? `?days=${days}` : "";
     try {
-      const [o, eq, cal, pos, tr] = await Promise.all([
+      const [o, eq, cal, pos, tr, sc] = await Promise.all([
         api<Overview>(`/accounts/${accountId}/overview${q}`),
         api<EquityPoint[]>(`/accounts/${accountId}/equity${q}`),
         api<CalendarDay[]>(`/accounts/${accountId}/calendar`),
         api<Position[]>(`/accounts/${accountId}/positions`),
         api<{ items: TradeRow[] }>(`/accounts/${accountId}/trades?limit=10`),
+        api<Score>(`/accounts/${accountId}/score`),
       ]);
-      setOv(o); setEquity(eq); setCalendar(cal); setPositions(pos); setTrades(tr.items);
+      setOv(o); setEquity(eq); setCalendar(cal); setPositions(pos); setTrades(tr.items); setScore(sc);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Gagal memuat dashboard");
     } finally {
@@ -147,7 +154,26 @@ export function DashboardPage() {
             <div className="card kpi"><span className="muted">Profit Factor</span><b>{fmt(ov.summary.profit_factor)}</b></div>
             <div className="card kpi"><span className="muted">Expectancy</span><b className={ov.summary.expectancy !== null && ov.summary.expectancy >= 0 ? "pos" : "neg"}>{money(ov.summary.expectancy)}</b></div>
             <div className="card kpi"><span className="muted">Max Drawdown</span><b className="neg">{money(ov.summary.max_drawdown)}</b></div>
+            <div className="card kpi">
+              <span className="muted">Skor Performa {!score?.data_complete && score?.score !== null && <span className="chip chip-warn">{"jurnal < 10"}</span>}</span>
+              <b>{score?.score === null || !score ? (score ? `${score.progress}/${score.need} trade` : "—") : `${score.score} · ${score.label}`}</b>
+            </div>
           </div>
+
+          {score?.components && (
+            <div className="card">
+              <h2 className="title">Komponen Skor</h2>
+              <div className="score-bars">
+                {Object.entries(score.components).map(([key, c]) => (
+                  <div key={key} className="score-row">
+                    <span className="muted note score-name">{key.replace("_", " ")} ({c.weight})</span>
+                    <div className="score-track"><div className="score-fill" style={{ width: `${Math.round(c.sub * 100)}%` }} /></div>
+                    <span className="muted note">{Math.round(c.sub * 100)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="card">
             <div className="row spread">

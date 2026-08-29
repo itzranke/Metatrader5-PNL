@@ -21,6 +21,8 @@ interface SessionRow {
   is_current: boolean;
 }
 interface Account { id: number; name: string; kind: string; }
+interface MoneyRow { id: number; kind: "deposit" | "withdrawal"; amount: number; ts: string; method: string; note: string; }
+interface MoneyList { net_deposits: number; total_deposits: number; total_withdrawals: number; items: MoneyRow[]; }
 
 export function SettingsPage() {
   const { user, updateUser } = useAuth();
@@ -32,9 +34,18 @@ export function SettingsPage() {
   const [locale, setLocale] = useState("id");
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [money, setMoney] = useState<MoneyList | null>(null);
+  const [moneyAccountId, setMoneyAccountId] = useState<number | null>(null);
+  const [moneyAmount, setMoneyAmount] = useState("");
+  const [moneyKind, setMoneyKind] = useState<"deposit" | "withdrawal">("deposit");
+  const [moneyNote, setMoneyNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const loadMoney = useCallback(async (accountId: number) => {
+    setMoney(await api<MoneyList>(`/accounts/${accountId}/money`));
+  }, []);
 
   const loadSessions = useCallback(async () => {
     setSessions(await api<SessionRow[]>("/auth/sessions"));
@@ -48,8 +59,14 @@ export function SettingsPage() {
       setLocale(m.locale);
     }).catch((e) => setError(e instanceof Error ? e.message : "Gagal memuat profil"));
     loadSessions().catch(() => undefined);
-    api<Account[]>("/accounts").then(setAccounts).catch(() => undefined);
-  }, [loadSessions]);
+    api<Account[]>("/accounts").then((a) => {
+      setAccounts(a);
+      if (a.length > 0) {
+        setMoneyAccountId(a[0].id);
+        loadMoney(a[0].id).catch(() => undefined);
+      }
+    }).catch(() => undefined);
+  }, [loadSessions, loadMoney]);
 
   async function saveProfile(e: FormEvent) {
     e.preventDefault();
@@ -93,6 +110,32 @@ export function SettingsPage() {
   }
 
   const activeAccount = accounts.find((a) => a.kind === "mt5") ?? accounts[0];
+
+  async function addMoney(e: FormEvent) {
+    e.preventDefault();
+    if (!moneyAccountId) return;
+    setBusy(true); setError(null); setInfo(null);
+    try {
+      const amount = Number(moneyAmount);
+      await api(`/accounts/${moneyAccountId}/${moneyKind === "deposit" ? "deposits" : "withdrawals"}`, {
+        method: "POST",
+        body: JSON.stringify({ amount, note: moneyNote }),
+      });
+      setMoneyAmount(""); setMoneyNote("");
+      setInfo("Mutasi dana tersimpan.");
+      await loadMoney(moneyAccountId);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Gagal menyimpan mutasi");
+    } finally { setBusy(false); }
+  }
+
+  async function removeMoney(kind: string, id: number) {
+    if (!window.confirm("Hapus mutasi ini?")) return;
+    try {
+      await api(`/money/${kind}/${id}`, { method: "DELETE" });
+      if (moneyAccountId) await loadMoney(moneyAccountId);
+    } catch (err) { setError(err instanceof ApiError ? err.message : "Gagal menghapus"); }
+  }
 
   return (
     <div>
@@ -189,7 +232,55 @@ export function SettingsPage() {
             <a className="btn btn-secondary" href={`/api/v1/accounts/${activeAccount.id}/export/journal.csv`} download>
               Jurnal (CSV)
             </a>
+            <a className="btn btn-secondary" href={`/api/v1/accounts/${activeAccount.id}/export/excel.xlsx`} download>
+              Excel (xlsx)
+            </a>
           </div>
+        )}
+      </div>
+
+      <div className="card">
+        <h2 className="title">Mutasi Dana</h2>
+        <div className="row">
+          <select value={moneyAccountId ?? ""} onChange={(e) => { setMoneyAccountId(Number(e.target.value)); loadMoney(Number(e.target.value)); }} aria-label="Akun mutasi">
+            {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+          </select>
+          {money && (
+            <span className="muted note">
+              Net {money.net_deposits.toLocaleString("id-ID", { maximumFractionDigits: 2 })} · 
+              Deposit {money.total_deposits.toLocaleString("id-ID", { maximumFractionDigits: 2 })} · 
+              Tarik {money.total_withdrawals.toLocaleString("id-ID", { maximumFractionDigits: 2 })}
+            </span>
+          )}
+        </div>
+        <form className="row" onSubmit={addMoney}>
+          <select value={moneyKind} onChange={(e) => setMoneyKind(e.target.value as "deposit" | "withdrawal")} aria-label="Jenis mutasi">
+            <option value="deposit">Deposit</option>
+            <option value="withdrawal">Penarikan</option>
+          </select>
+          <input type="number" min="0.01" step="0.01" placeholder="Jumlah" value={moneyAmount} onChange={(e) => setMoneyAmount(e.target.value)} required />
+          <input placeholder="Catatan (opsional)" value={moneyNote} onChange={(e) => setMoneyNote(e.target.value)} />
+          <button className="btn btn-primary" type="submit" disabled={busy}>
+            {busy && <span className="spinner" aria-hidden="true" />}
+            Tambah
+          </button>
+        </form>
+        {money && money.items.length > 0 && (
+          <table className="table">
+            <thead><tr><th>Tanggal</th><th>Jenis</th><th>Jumlah</th><th>Metode</th><th>Catatan</th><th></th></tr></thead>
+            <tbody>
+              {money.items.map((m) => (
+                <tr key={`${m.kind}-${m.id}`}>
+                  <td>{new Date(m.ts).toLocaleDateString("id-ID")}</td>
+                  <td><span className={`chip ${m.kind === "deposit" ? "chip-win" : "chip-loss"}`}>{m.kind}</span></td>
+                  <td className={m.kind === "deposit" ? "pos" : "neg"}>{m.amount.toLocaleString("id-ID", { maximumFractionDigits: 2 })}</td>
+                  <td>{m.method}</td>
+                  <td>{m.note}</td>
+                  <td><button className="btn btn-ghost" onClick={() => removeMoney(m.kind, m.id)}>Hapus</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
     </div>
