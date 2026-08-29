@@ -39,6 +39,7 @@ export function SettingsPage() {
   const [moneyAmount, setMoneyAmount] = useState("");
   const [moneyKind, setMoneyKind] = useState<"deposit" | "withdrawal">("deposit");
   const [moneyNote, setMoneyNote] = useState("");
+  const [reportMonth, setReportMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -126,6 +127,20 @@ export function SettingsPage() {
       await loadMoney(moneyAccountId);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Gagal menyimpan mutasi");
+    } finally { setBusy(false); }
+  }
+
+  async function emailReport() {
+    if (!activeAccount) return;
+    setBusy(true); setError(null); setInfo(null);
+    try {
+      await api(`/accounts/${activeAccount.id}/reports/monthly/email`, {
+        method: "POST",
+        body: JSON.stringify({ month: reportMonth }),
+      });
+      setInfo("Laporan dikirim ke email Anda (dev: cek log server).");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Gagal mengirim laporan");
     } finally { setBusy(false); }
   }
 
@@ -225,6 +240,7 @@ export function SettingsPage() {
             : "Buat akun dulu untuk mengekspor data."}
         </p>
         {activeAccount && (
+          <>
           <div className="row">
             <a className="btn btn-secondary" href={`/api/v1/accounts/${activeAccount.id}/export/trades.csv`} download>
               Trade (CSV)
@@ -236,6 +252,17 @@ export function SettingsPage() {
               Excel (xlsx)
             </a>
           </div>
+          <div className="row">
+            <a className="btn btn-secondary" href={`/api/v1/accounts/${activeAccount.id}/reports/monthly.pdf`} download>
+              Laporan Bulanan (PDF)
+            </a>
+            <input type="month" value={reportMonth} onChange={(e) => setReportMonth(e.target.value)} aria-label="Bulan laporan" />
+            <button className="btn btn-secondary" onClick={emailReport} disabled={busy || !activeAccount}>
+              {busy && <span className="spinner" aria-hidden="true" />}
+              Kirim Email
+            </button>
+          </div>
+          </>
         )}
       </div>
 

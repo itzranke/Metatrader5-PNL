@@ -20,6 +20,7 @@ from apps.api.app.routers import (
     export,
     health,
     journal,
+    reports,
     score,
 )
 from packages.config import get_settings
@@ -64,6 +65,7 @@ def create_app() -> FastAPI:
     app.include_router(export.router, prefix=settings.api_prefix)
     app.include_router(score.router, prefix=settings.api_prefix)
     app.include_router(analytics.router, prefix=settings.api_prefix)
+    app.include_router(reports.router, prefix=settings.api_prefix)
     # screenshot jurnal (nama file uuid acak; akses via path yang tidak bisa ditebak)
     upload_dir = Path(settings.upload_dir)
     upload_dir.mkdir(parents=True, exist_ok=True)
