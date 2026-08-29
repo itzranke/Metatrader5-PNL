@@ -37,8 +37,10 @@ from packages.db import get_session
 from packages.db.models import (
     ConnectorDevice,
     Deal,
+    MaeMfeRecord,
     MT5Connection,
     Position,
+    Trade,
     TradingAccount,
     User,
 )
@@ -221,36 +223,87 @@ def sync(
         ).all()
     }
     incoming = {p.ticket: p for p in body.positions}
+    incoming_objs: dict[str, Position] = {}
     closed = 0
     for ticket, pos in incoming.items():
         prev = existing.get(ticket)
         if prev is None:
-            db.add(
-                Position(
-                    user_id=device.user_id,
-                    trading_account_id=account.id,
-                    ticket=ticket,
-                    symbol=pos.symbol,
-                    side=pos.side,
-                    volume=pos.volume,
-                    open_price=pos.open_price,
-                    open_time=pos.open_time,
-                    current_price=pos.current_price,
-                    floating_pnl=pos.floating_pnl,
-                    sl=pos.sl,
-                    tp=pos.tp,
-                )
+            obj = Position(
+                user_id=device.user_id,
+                trading_account_id=account.id,
+                ticket=ticket,
+                symbol=pos.symbol,
+                side=pos.side,
+                volume=pos.volume,
+                open_price=pos.open_price,
+                open_time=pos.open_time,
+                current_price=pos.current_price,
+                floating_pnl=pos.floating_pnl,
+                sl=pos.sl,
+                tp=pos.tp,
             )
+            db.add(obj)
+            incoming_objs[ticket] = obj
         else:
             prev.volume = pos.volume  # partial close → volume berkurang
             prev.current_price = pos.current_price
             prev.floating_pnl = pos.floating_pnl
             prev.sl = pos.sl
             prev.tp = pos.tp
+            incoming_objs[ticket] = prev
     for ticket, prev in existing.items():
         if ticket not in incoming:
             db.delete(prev)  # posisi tidak ada lagi di MT5 = sudah ditutup
             closed += 1
+
+    # MAE/MFE (BLUEPRINT §14): posisi terbuka → positions.mae/mfe;
+    # trade tertutup → mae_mfe_records + trades.mae/mfe (idempoten upsert)
+    for ex in body.excursions:
+        prev = existing.get(ex.ticket) or incoming_objs.get(ex.ticket)
+        if prev is not None:
+            prev.mae = ex.mae_pts
+            prev.mfe = ex.mfe_pts
+            continue
+        trade = db.scalar(
+            select(Trade).where(
+                Trade.trading_account_id == account.id,
+                Trade.ticket == ex.ticket,
+                Trade.deleted_at.is_(None),
+            )
+        )
+        if trade is None:
+            continue  # deals belum dibangun jadi trade — lewati aman
+        rec = db.scalar(select(MaeMfeRecord).where(MaeMfeRecord.trade_id == trade.id))
+        open_price = float(trade.open_price or 0)
+        risk_amount = float(trade.risk_amount) if trade.risk_amount else None
+        mae_pct = ex.mae_pts / open_price * 100.0 if open_price else None
+        mfe_pct = ex.mfe_pts / open_price * 100.0 if open_price else None
+        mae_r = abs(ex.mae_currency) / risk_amount if ex.mae_currency is not None and risk_amount else None
+        mfe_r = abs(ex.mfe_currency) / risk_amount if ex.mfe_currency is not None and risk_amount else None
+        if rec is None:
+            db.add(MaeMfeRecord(
+                user_id=device.user_id, trading_account_id=account.id, trade_id=trade.id,
+                mae_pts=ex.mae_pts, mfe_pts=ex.mfe_pts,
+                mae_currency=ex.mae_currency, mfe_currency=ex.mfe_currency,
+                mae_pct=mae_pct, mfe_pct=mfe_pct, mae_r=mae_r, mfe_r=mfe_r,
+                path_source="ticks" if ex.samples else "none", samples=ex.samples,
+            ))
+        else:
+            rec.mae_pts = ex.mae_pts
+            rec.mfe_pts = ex.mfe_pts
+            rec.mae_currency = ex.mae_currency
+            rec.mfe_currency = ex.mfe_currency
+            rec.mae_pct = mae_pct
+            rec.mfe_pct = mfe_pct
+            rec.mae_r = mae_r
+            rec.mfe_r = mfe_r
+            rec.samples = max(rec.samples or 0, ex.samples)
+            if ex.samples:
+                rec.path_source = "ticks"
+        trade.mae = ex.mae_currency
+        trade.mfe = ex.mfe_currency
+        trade.mae_pct = mae_pct
+        trade.mfe_pct = mfe_pct
 
     last_ticket = body.last_ticket
     conn.state = "SYNCED"

@@ -55,6 +55,17 @@ class PositionIn(BaseModel):
     tp: float | None = None
 
 
+class ExcursionIn(BaseModel):
+    """MAE/MFE dari connector (BLUEPRINT §14) — pts = pergerakan harga simbol."""
+
+    ticket: str = Field(min_length=1, max_length=64)
+    mae_pts: float = Field(ge=0)
+    mfe_pts: float = Field(ge=0)
+    mae_currency: float | None = Field(default=None)
+    mfe_currency: float | None = Field(default=None)
+    samples: int = Field(default=1, ge=0)
+
+
 class SyncIn(BaseModel):
     login: str = Field(min_length=1, max_length=50)
     server: str = Field(min_length=1, max_length=100)
@@ -62,6 +73,10 @@ class SyncIn(BaseModel):
     last_ticket: str | None = Field(default=None, max_length=64)
     deals: list[DealIn] = Field(default_factory=list, max_length=500)
     positions: list[PositionIn] = Field(default_factory=list)
+    excursions: list[ExcursionIn] = Field(default_factory=list)
+
+
+
 
 
 class SyncOut(BaseModel):

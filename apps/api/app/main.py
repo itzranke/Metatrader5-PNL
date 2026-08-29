@@ -13,6 +13,7 @@ from sqlalchemy import select
 from apps.api.app.middleware import RequestLoggingMiddleware, SecurityHeadersMiddleware
 from apps.api.app.routers import (
     accounts,
+    analytics,
     auth,
     connector,
     dashboard,
@@ -62,6 +63,7 @@ def create_app() -> FastAPI:
     app.include_router(journal.router, prefix=settings.api_prefix)
     app.include_router(export.router, prefix=settings.api_prefix)
     app.include_router(score.router, prefix=settings.api_prefix)
+    app.include_router(analytics.router, prefix=settings.api_prefix)
     # screenshot jurnal (nama file uuid acak; akses via path yang tidak bisa ditebak)
     upload_dir = Path(settings.upload_dir)
     upload_dir.mkdir(parents=True, exist_ok=True)

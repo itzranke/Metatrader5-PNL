@@ -19,6 +19,7 @@ prop firm & backtest.
 | 6 Jurnal Trading (CRUD jurnal per trade/manual, emosi 3 fase, confidence/discipline, 5 flag psikologi, tag many-to-many, screenshot upload 5 MB, filter tag/setup/bulan) | ✅ selesai |
 | 7 Export CSV + Settings (trades.csv/journal.csv BOM UTF-8, profil, ganti password, sesi aktif + cabut) — **MVP 9 fitur LENGKAP** | ✅ selesai |
 | 8 Performance Score (§13: 0–100, 6 komponen, prorata data <10 jurnal) · Mutasi Dana (deposit/withdrawal multi-cabang, tanpa pengaruh balance) · Export Excel multi-sheet (Trades/Journal/Metrik) | ✅ selesai |
+| 9 MAE/MFE tick capture (§14: live tick connector → positions.mae/mfe + mae_mfe_records idempoten, path_source ticks/candles/none, halaman analitik scatter + distribusi + tabel, sync tetap jalan tanpa deal baru) | ✅ selesai |
 | 8–16 | lihat BLUEPRINT §34 |
 
 ## Struktur

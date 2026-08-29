@@ -102,6 +102,10 @@ def test_score_cross_user_404(client):
 
 def test_deposit_withdrawal_crud(client):
     token, h, acc = _setup(client)
+    m0_body = client.get(f"/api/v1/accounts/{acc['id']}/money", headers=h).json()
+    m0 = m0_body["net_deposits"]
+    m0_items = m0_body["items"]
+
     r = client.post(
         f"/api/v1/accounts/{acc['id']}/deposits",
         json={"amount": 500.0, "method": "bank", "note": "Top up"},
@@ -121,8 +125,9 @@ def test_deposit_withdrawal_crud(client):
     r3 = client.get(f"/api/v1/accounts/{acc['id']}/money", headers=h)
     assert r3.status_code == 200
     body = r3.json()
-    # demo generator: deposit 10000 + 5000; withdrawal 1200; + baru 500/-120.5
-    assert body["net_deposits"] == 500.0 - 120.5 + 10000 + 5000 - 1200
+    # demo generator acak (withdrawal tidak selalu ada) → bandingkan delta saja
+    assert body["net_deposits"] == m0 + 500.0 - 120.5
+    assert len(body["items"]) == len(m0_items) + 2
     kinds = {i["kind"] for i in body["items"]}
     assert kinds == {"deposit", "withdrawal"}
 

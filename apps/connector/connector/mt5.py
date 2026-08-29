@@ -53,6 +53,21 @@ class MT5Position:
     tp: float | None
 
 
+@dataclass
+class MTTick:
+    """Harga terkini simbol (BLUEPRINT §14 — live tick capture MAE/MFE).
+
+    low/high = rentang harga sejak posisi terbuka; hanya diisi FakeMT5
+    (walk sintetis). Adapter MT5 nyata mengisi bid/ask per polling, dan
+    engine mengakumulasi MAE/MFE dari bid/ask tersebut.
+    """
+
+    bid: float
+    ask: float
+    low: float | None = None
+    high: float | None = None
+
+
 class MT5Adapter:
     """Wrapper read-only atas MetaTrader5 lib."""
 
@@ -116,6 +131,15 @@ class MT5Adapter:
             )
         return out
 
+    def current_tick(self, position: MT5Position) -> MTTick | None:
+        """Tick terkini simbol posisi (untuk akumulasi MAE/MFE live)."""
+        if mt5 is None:
+            return None
+        tick = mt5.symbol_info_tick(position.symbol)
+        if tick is None:
+            return None
+        return MTTick(bid=float(tick.bid), ask=float(tick.ask))
+
 
 SYMBOLS = ["EURUSD", "GBPUSD", "USDJPY", "XAUUSD", "BTCUSD"]
 
@@ -123,13 +147,37 @@ SYMBOLS = ["EURUSD", "GBPUSD", "USDJPY", "XAUUSD", "BTCUSD"]
 class FakeMT5:
     """Data sintetis deterministik — meniru antarmuka MT5Adapter untuk dev/test."""
 
-    def __init__(self, login: str = "12345678", server: str = "Srv-Demo", seed: int = 42):
+    def __init__(self, login: str = "12345678", server: str = "Srv-Demo", seed: int = 42,
+                 fixed_walks: dict[int, dict] | None = None):
         self.login = login
         self.server = server
         self._rng = random.Random(seed)
         self._deals: list[MT5Deal] = []
         self._positions: list[MT5Position] = []
         self._next_ticket = 1000
+        self._walks: dict[int, dict] = {}
+        self._fixed_walks = fixed_walks or {}
+
+    def _walk_for(self, pos: MT5Position) -> dict:
+        if pos.ticket in self._fixed_walks:
+            return self._fixed_walks[pos.ticket]
+        if pos.ticket in self._walks:
+            return self._walks[pos.ticket]
+        # random walk deterministik (seed = ticket): 30 langkah dari open_price
+        rng = random.Random(pos.ticket)
+        price = pos.open_price
+        low = high = price
+        step = max(pos.open_price * 0.0006, 1e-6)  # skala wajar per langkah
+        for _ in range(30):
+            price += rng.uniform(-1.0, 1.0) * step
+            low = min(low, price)
+            high = max(high, price)
+        self._walks[pos.ticket] = {"low": low, "high": high, "price": price}
+        return self._walks[pos.ticket]
+
+    def current_tick(self, position: MT5Position) -> MTTick | None:
+        w = self._walk_for(position)
+        return MTTick(bid=w["price"], ask=w["price"], low=w["low"], high=w["high"])
 
     def connect(self) -> bool:
         return True

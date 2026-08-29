@@ -1,6 +1,7 @@
 import { Link, Route, Routes } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { AccountsPage } from "./Accounts";
+import { AnalyticsMaeMfePage } from "./AnalyticsMaeMfe";
 import { ConnectorPage } from "./Connector";
 import { DashboardPage } from "./Dashboard";
 import { JournalPage } from "./Journal";
@@ -18,8 +19,8 @@ export function AppShell() {
           <Link to="/app/accounts">Akun</Link>
           <Link to="/app/connector">Connector</Link>
           <Link to="/app/journal">Jurnal</Link>
+          <Link to="/app/analytics/mae-mfe">MAE/MFE</Link>
           <Link to="/app/settings">Pengaturan</Link>
-          <span className="nav-placeholder">Trading · Jurnal · Analitik (fase berikutnya)</span>
         </nav>
       </aside>
       <section className="content">
@@ -44,6 +45,7 @@ export function AppShell() {
           <Route path="accounts" element={<AccountsPage />} />
           <Route path="connector" element={<ConnectorPage />} />
           <Route path="journal" element={<JournalPage />} />
+          <Route path="analytics/mae-mfe" element={<AnalyticsMaeMfePage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Routes>
       </section>

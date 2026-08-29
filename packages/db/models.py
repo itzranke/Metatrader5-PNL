@@ -255,6 +255,33 @@ class Trade(TimestampMixin, SoftDeleteMixin, Base):
     partial_closes: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
 
+class MaeMfeRecord(TimestampMixin, Base):
+    """Ringkasan MAE/MFE per trade (BLUEPRINT §14) — 1 baris per trade.
+
+    path_source: 'ticks' (live connector) | 'candles' (fallback) | 'none'.
+    """
+
+    __tablename__ = "mae_mfe_records"
+    __table_args__ = (
+        UniqueConstraint("trade_id", name="uq_mae_mfe_trade"),
+        Index("ix_mae_mfe_account", "trading_account_id"),
+    )
+    id: Mapped[int] = mapped_column(BIGINT, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    trading_account_id: Mapped[int] = mapped_column(ForeignKey("trading_accounts.id"), nullable=False)
+    trade_id: Mapped[int] = mapped_column(ForeignKey("trades.id"), nullable=False)
+    mae_pts: Mapped[float | None] = mapped_column(Numeric(20, 8))
+    mfe_pts: Mapped[float | None] = mapped_column(Numeric(20, 8))
+    mae_currency: Mapped[float | None] = mapped_column(Numeric(20, 8))
+    mfe_currency: Mapped[float | None] = mapped_column(Numeric(20, 8))
+    mae_pct: Mapped[float | None] = mapped_column(Numeric(10, 6))
+    mfe_pct: Mapped[float | None] = mapped_column(Numeric(10, 6))
+    mae_r: Mapped[float | None] = mapped_column(Numeric(12, 6))
+    mfe_r: Mapped[float | None] = mapped_column(Numeric(12, 6))
+    path_source: Mapped[str] = mapped_column(String(10), default="none", nullable=False)
+    samples: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+
 class Deal(TimestampMixin, Base):
     """Deal mentah MT5 (audit + partial close)."""
     __tablename__ = "deals"
@@ -299,6 +326,8 @@ class Position(Base):
     floating_pnl: Mapped[float | None] = mapped_column(Numeric(20, 8))
     sl: Mapped[float | None] = mapped_column(Numeric(20, 8))
     tp: Mapped[float | None] = mapped_column(Numeric(20, 8))
+    mae: Mapped[float | None] = mapped_column(Numeric(20, 8))  # live tick capture (pts)
+    mfe: Mapped[float | None] = mapped_column(Numeric(20, 8))
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )

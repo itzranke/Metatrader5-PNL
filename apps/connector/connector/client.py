@@ -109,9 +109,40 @@ class SyncEngine:
         return sent, len(items) - sent
 
     # ---- sync sekali (unit kerja utama) ----
+    def _update_excursions(self, mt5_positions: list) -> list[dict]:
+        """Akumulasi MAE/MFE live per posisi (BLUEPRINT §14 level 1).
+
+        State kumulatif disimpan di cfg['excursions'] (bertahan antar sync
+        dalam satu proses; adikodifikasikan per ticket). MTTick dari FakeMT5
+        membawa low/high walk → excursion penuh; adapter nyata hanya bid/ask
+        → excursion bertahap (mendekati maksimum seiring polling).
+        """
+        ex = self.cfg.setdefault("excursions", {})
+        out: list[dict] = []
+        for p in mt5_positions:
+            tick = self.mt5.current_tick(p)
+            if tick is None:
+                continue
+            st = ex.setdefault(str(p.ticket), {"mae": 0.0, "mfe": 0.0, "samples": 0})
+            if p.side == "buy":
+                adverse = max(0.0, p.open_price - (tick.low if tick.low is not None else tick.bid))
+                fav = max(0.0, (tick.high if tick.high is not None else tick.ask) - p.open_price)
+            else:
+                adverse = max(0.0, (tick.high if tick.high is not None else tick.ask) - p.open_price)
+                fav = max(0.0, p.open_price - (tick.low if tick.low is not None else tick.bid))
+            st["mae"] = max(st["mae"], round(adverse, 8))
+            st["mfe"] = max(st["mfe"], round(fav, 8))
+            st["samples"] += 1
+            out.append({
+                "ticket": str(p.ticket), "mae_pts": st["mae"], "mfe_pts": st["mfe"],
+                "samples": st["samples"],
+            })
+        return out
+
     def sync_once(self, device_id: int, device_key: str) -> dict:
         self.state = "SYNCING"
-        # 1. posisi (selalu penuh)
+        # 1. posisi (selalu penuh) + MAE/MFE live dari tick
+        mt5_positions = self.mt5.positions()
         positions = [
             {
                 "ticket": str(p.ticket), "symbol": p.symbol, "side": p.side,
@@ -119,8 +150,9 @@ class SyncEngine:
                 "open_time": p.open_time.isoformat(), "current_price": p.current_price,
                 "floating_pnl": p.floating_pnl, "sl": p.sl, "tp": p.tp,
             }
-            for p in self.mt5.positions()
+            for p in mt5_positions
         ]
+        excursions = self._update_excursions(mt5_positions)
         # 2. deals inkremental (60 hari pertama, lalu sejak ticket terakhir)
         last_ticket = self.cfg.get("last_deal_ticket")
         from_time = datetime.now(UTC) - timedelta(days=60)
@@ -134,11 +166,14 @@ class SyncEngine:
         server = self.mt5.server
 
         result = {"accepted": 0, "duplicates": 0, "last_ticket": None}
-        for i in range(0, len(deals), self.batch_size):
-            batch = deals[i : i + self.batch_size]
+        # tanpa deal baru pun tetap kirim (posisi + MAE/MFE live)
+        batches = [deals[i : i + self.batch_size] for i in range(0, len(deals), self.batch_size)]
+        if not batches and positions:
+            batches = [[]]
+        for i, batch in enumerate(batches):
             payload = {
                 "login": login, "server": server, "kind": "incremental" if last_ticket else "full",
-                "last_ticket": str(batch[-1].deal_ticket),
+                "last_ticket": str(batch[-1].deal_ticket) if batch else last_ticket,
                 "deals": [
                     {
                         "deal_ticket": str(d.deal_ticket), "order_ticket": str(d.order_ticket),
@@ -149,6 +184,7 @@ class SyncEngine:
                     for d in batch
                 ],
                 "positions": positions if i == 0 else [],  # posisi cukup di batch pertama
+                "excursions": excursions if i == 0 else [],
             }
             try:
                 resp = self.client.sync(device_id, device_key, payload)

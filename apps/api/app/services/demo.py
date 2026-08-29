@@ -20,6 +20,7 @@ from packages.db.models import (
     Deposit,
     EquitySnapshot,
     JournalEntry,
+    MaeMfeRecord,
     MonthlyStatistic,
     Position,
     PsychologyEntry,
@@ -116,6 +117,7 @@ def generate_demo_account(db: Session, user_id: int, name: str = "Data Contoh") 
     peak = balance
     trades_flat: list[Trade] = []
     journal_candidates: list[tuple[Trade, str]] = []
+    excursion_records: list[tuple[Trade, dict]] = []
 
     for day, count in zip(trading_days, day_counts, strict=False):
         day_trades: list[Trade] = []
@@ -140,8 +142,24 @@ def generate_demo_account(db: Session, user_id: int, name: str = "Data Contoh") 
             if close_price <= 0:
                 close_price = open_price
 
-            mae_r = -abs(r) * rng.uniform(0.3, 1.0)  # negatif
+            mae_r = -abs(r) * rng.uniform(0.3, 1.0)  # negatif (R)
             mfe_r = abs(r) * rng.uniform(0.9, 1.6)
+            mae_currency = mae_r * risk
+            mfe_currency = mfe_r * risk
+            # pct & pts langsung dari % harga wajar (bukan turunan profit — skala
+            # lot×profit ke harga tidak realistis untuk lot kecil); currency tetap
+            # dari R agar konsisten dengan risk_amount
+            mae_pct = rng.uniform(0.05, 0.9)
+            mfe_pct = mae_pct * rng.uniform(1.5, 3.5)
+            mae_pts = open_price * mae_pct / 100.0
+            mfe_pts = open_price * mfe_pct / 100.0
+            # sumber path MAE/MFE: mayoritas ticks (connector), sisanya candles/none
+            src_roll = rng.random()
+            path_source = "ticks" if src_roll < 0.82 else ("candles" if src_roll < 0.91 else "none")
+            samples = (
+                rng.randint(20, 500) if path_source == "ticks"
+                else rng.randint(5, 20) if path_source == "candles" else 0
+            )
 
             trade = Trade(
                 user_id=user_id, trading_account_id=account.id, ticket=str(ticket),
@@ -149,12 +167,18 @@ def generate_demo_account(db: Session, user_id: int, name: str = "Data Contoh") 
                 open_price=open_price, close_price=close_price,
                 open_time=open_time, close_time=close_time,
                 net_profit=net, gross_profit=profit, swap=swap, commission=commission,
-                mae=mae_r * risk, mfe=mfe_r * risk,
-                mae_pct=abs(mae_r) / abs(r) if r else None,
-                mfe_pct=abs(mfe_r) / abs(r) if r else None,
+                mae=mae_currency, mfe=mfe_currency,
+                mae_pct=mae_pct, mfe_pct=mfe_pct,
                 r_multiple=r, risk_amount=risk, source="sync",
             )
             db.add(trade)
+            excursion_records.append((trade, dict(
+                mae_pts=mae_pts, mfe_pts=mfe_pts,
+                mae_currency=mae_currency, mfe_currency=mfe_currency,
+                mae_pct=mae_pct, mfe_pct=mfe_pct,
+                mae_r=abs(mae_r), mfe_r=abs(mfe_r),
+                path_source=path_source, samples=samples,
+            )))
             db.add(Deal(user_id=user_id, trading_account_id=account.id, deal_ticket=str(deal_ticket),
                         order_ticket=str(ticket), time=open_time, type=0 if side == "buy" else 1,
                         symbol=symbol, volume=volume, price=open_price, profit=0.0,
@@ -232,6 +256,13 @@ def generate_demo_account(db: Session, user_id: int, name: str = "Data Contoh") 
         ticket += 1
 
     # jurnal + tag + psikologi
+    db.flush()  # pastikan semua trade.id tersedia untuk MaeMfeRecord
+    for trade, ex in excursion_records:
+        db.add(MaeMfeRecord(
+            user_id=user_id, trading_account_id=account.id, trade_id=trade.id, **ex
+        ))
+    db.flush()
+
     for trade, symbol in journal_candidates[: rng.randint(6, 10)]:
         setup = rng.choice(SETUPS)
         entry = JournalEntry(
